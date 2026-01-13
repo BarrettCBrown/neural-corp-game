@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neural Corp: The Architect</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
@@ -14,6 +14,7 @@
             --neon-pink: #ff00ff;
             --neon-green: #0aff00;
             --neon-amber: #ffaa00;
+            --neon-red: #ff3333;
             --bg-dark: #050510;
             --glass: rgba(10, 15, 30, 0.85);
         }
@@ -25,6 +26,9 @@
             overflow: hidden;
             margin: 0;
             padding: 0;
+            height: 100vh;
+            height: 100dvh;
+            touch-action: none;
         }
 
         h1, h2, h3, .hud-value {
@@ -36,7 +40,6 @@
             display: block;
         }
 
-        /* Scanline effect */
         .scanlines {
             position: fixed;
             top: 0;
@@ -60,6 +63,12 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(0, 243, 255, 0.2);
             box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-panel.hazard {
+            border-color: var(--neon-red);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.2);
         }
 
         .btn-neon {
@@ -70,6 +79,7 @@
             text-shadow: 0 0 5px var(--neon-blue);
             font-family: 'Orbitron', sans-serif;
             letter-spacing: 1px;
+            touch-action: manipulation;
         }
 
         .btn-neon:hover:not(:disabled) {
@@ -79,62 +89,66 @@
         }
         
         .btn-neon:disabled {
-            opacity: 0.5;
+            opacity: 0.3;
             cursor: not-allowed;
-            border-color: #555;
-            color: #555;
-            text-shadow: none;
+            filter: grayscale(100%);
         }
 
-        .node-label {
-            position: absolute;
-            transform: translate(-50%, -150%);
-            font-size: 10px;
-            color: rgba(255,255,255,0.7);
-            pointer-events: none;
-            text-shadow: 0 0 2px black;
-            white-space: nowrap;
+        .btn-toggle {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border: 1px solid #444;
+            color: #888;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+        
+        .btn-toggle.active {
+            background: var(--neon-green);
+            color: black;
+            border-color: var(--neon-green);
+            font-weight: bold;
+            box-shadow: 0 0 10px var(--neon-green);
         }
 
-        /* Custom Scrollbar */
+        .btn-toggle.active-danger {
+            background: var(--neon-red);
+            color: white;
+            border-color: var(--neon-red);
+            font-weight: bold;
+            box-shadow: 0 0 10px var(--neon-red);
+        }
+
+        input[type=range] {
+            touch-action: pan-x;
+        }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0b1120; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--neon-blue); }
-        
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
-        }
-        
-        .hazard-border {
-            border: 1px solid #ff3333;
-            animation: pulse-red 2s infinite;
-        }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col relative">
+<body class="flex flex-col relative select-none">
 
     <div class="scanlines"></div>
 
-    <!-- MAIN HUD -->
-    <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between pointer-events-none">
-        <div class="glass-panel p-4 rounded-br-3xl pointer-events-auto">
-            <h1 class="text-2xl text-cyan-400 mb-1 flex items-center gap-2">
-                <span class="text-3xl">🧠</span> NEURAL CORP
+    <!-- MAIN HUD (Top) -->
+    <div id="ui-header" class="absolute top-0 left-0 w-full p-2 md:p-4 z-20 flex justify-between pointer-events-none">
+        <div class="glass-panel p-3 md:p-4 rounded-br-3xl pointer-events-auto">
+            <h1 class="text-xl md:text-2xl text-cyan-400 mb-1 flex items-center gap-2">
+                <span class="text-2xl md:text-3xl">🧠</span> <span class="hidden md:inline">NEURAL CORP</span>
             </h1>
-            <div class="text-xs text-cyan-100 tracking-widest opacity-70">COGNITIVE DIVISION ARCHITECT</div>
-            <div class="mt-4 space-y-2 text-sm">
-                <div class="flex justify-between w-48">
-                    <span class="text-gray-400">EPOCH (Cycle):</span>
+            <div class="text-[10px] md:text-xs text-cyan-100 tracking-widest opacity-70">ARCHITECT MODE</div>
+            <div class="mt-2 md:mt-4 space-y-1 md:space-y-2 text-xs md:text-sm">
+                <div class="flex justify-between w-32 md:w-48">
+                    <span class="text-gray-400">EPOCH:</span>
                     <span id="epoch-display" class="hud-value text-white">0</span>
                 </div>
-                <div class="flex justify-between w-48">
-                    <span class="text-gray-400">KPI GAP (Loss):</span>
+                <div class="flex justify-between w-32 md:w-48">
+                    <span class="text-gray-400">LOSS (GAP):</span>
                     <span id="loss-display" class="hud-value text-red-400">0.000</span>
                 </div>
-                <div class="flex justify-between w-48">
+                <div class="flex justify-between w-32 md:w-48">
                     <span class="text-gray-400">ACCURACY:</span>
                     <span id="acc-display" class="hud-value text-green-400">0%</span>
                 </div>
@@ -142,58 +156,73 @@
         </div>
 
         <!-- LEVEL OBJECTIVE -->
-        <div class="glass-panel p-4 rounded-bl-3xl pointer-events-auto max-w-md text-right">
-            <h2 class="text-amber-400 text-lg mb-1" id="level-title">LEVEL 1: THE STARTUP</h2>
-            <p class="text-xs text-gray-300 mb-2 italic" id="level-desc">
-                Establish the first lines of communication. Train a simple Linear Perceptron.
+        <div class="glass-panel p-3 md:p-4 rounded-bl-3xl pointer-events-auto max-w-[200px] md:max-w-md text-right flex flex-col items-end">
+            <h2 class="text-amber-400 text-sm md:text-lg mb-1" id="level-title">LEVEL 1</h2>
+            <p class="text-[10px] md:text-xs text-gray-300 mb-2 italic hidden md:block" id="level-desc">
+                Mission Description
             </p>
-            <div id="objective-container" class="text-sm font-bold text-white border-t border-gray-700 pt-2 mt-2">
-                GOAL: Reach 95% Accuracy
+            <div id="objective-container" class="text-xs md:text-sm font-bold text-white border-t border-gray-700 pt-2 mt-2 w-full text-right">
+                GOAL: 95% ACC
+            </div>
+
+            <!-- LEVEL 3 DATA CONTROLS -->
+            <div id="data-controls" class="mt-4 hidden flex-col gap-2 items-end w-full">
+                <div class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Training Source</div>
+                <div class="flex gap-2">
+                    <button id="btn-data-legacy" class="btn-toggle active-danger rounded-l" onclick="Game.setDataSource('legacy')">LEGACY (BIASED)</button>
+                    <button id="btn-data-audit" class="btn-toggle rounded-r" onclick="Game.setDataSource('audited')">AUDITED (CLEAN)</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- CONTROLS BOTTOM -->
-    <div class="absolute bottom-0 left-0 w-full p-6 z-20 flex justify-center pointer-events-none">
-        <div class="glass-panel px-8 py-4 rounded-full pointer-events-auto flex items-center gap-6">
+    <!-- CONTROLS (Bottom) -->
+    <div id="ui-footer" class="absolute bottom-0 left-0 w-full p-4 md:p-6 z-20 flex justify-center pointer-events-none">
+        <div class="glass-panel px-4 py-3 md:px-8 md:py-4 rounded-xl md:rounded-full pointer-events-auto flex flex-wrap justify-center items-center gap-4 md:gap-6">
             
-            <div class="flex flex-col items-center">
-                <span class="text-[10px] text-gray-400 mb-1 uppercase tracking-wider">Learning Rate (Change Velocity)</span>
-                <input type="range" id="lr-slider" min="0.001" max="0.1" step="0.001" value="0.01" class="w-32 accent-cyan-500">
+            <div class="flex flex-col items-center w-full md:w-auto">
+                <span class="text-[10px] text-gray-400 mb-1 uppercase tracking-wider">Learning Rate</span>
+                <input type="range" id="lr-slider" min="0.001" max="0.1" step="0.001" value="0.05" class="w-full md:w-32 accent-cyan-500 cursor-pointer">
             </div>
 
-            <div class="h-8 w-px bg-gray-700"></div>
+            <div class="hidden md:block h-8 w-px bg-gray-700"></div>
 
-            <button id="btn-step" class="btn-neon px-6 py-2 rounded font-bold flex items-center gap-2">
-                <span>▶</span> RUN BATCH (Forward)
+            <button id="btn-step" class="btn-neon px-4 py-2 md:px-6 rounded font-bold flex items-center gap-2 text-xs md:text-base">
+                <span>▶</span> <span class="hidden md:inline">STEP</span>
             </button>
             
-            <button id="btn-train" class="btn-neon px-6 py-2 rounded font-bold flex items-center gap-2 border-amber-500 text-amber-500 hover:shadow-amber-500/50">
-                <span>⚡</span> TRAIN (Backprop)
+            <button id="btn-train" class="btn-neon px-4 py-2 md:px-6 rounded font-bold flex items-center gap-2 border-amber-500 text-amber-500 hover:shadow-amber-500/50 text-xs md:text-base">
+                <span>⚡</span> AUTO TRAIN
             </button>
 
-            <div class="h-8 w-px bg-gray-700"></div>
+            <div class="hidden md:block h-8 w-px bg-gray-700"></div>
 
-            <button id="btn-reset" class="px-4 py-2 text-xs text-red-400 hover:text-red-300 border border-red-900/50 hover:bg-red-900/20 rounded transition">
-                RESET ORG
+            <button id="btn-reset" class="px-3 py-2 text-[10px] md:text-xs text-red-400 hover:text-red-300 border border-red-900/50 hover:bg-red-900/20 rounded transition">
+                RESET
             </button>
         </div>
     </div>
 
-    <!-- CHARTS OVERLAY RIGHT -->
-    <div class="absolute top-1/2 right-4 transform -translate-y-1/2 z-10 w-64 pointer-events-none">
+    <!-- CHARTS OVERLAY (Right) -->
+    <div class="absolute top-1/2 right-2 md:right-4 transform -translate-y-1/2 z-10 w-40 md:w-64 pointer-events-none">
         <div class="glass-panel p-2 rounded mb-4 pointer-events-auto">
-            <div class="text-[10px] text-center text-gray-400 mb-1 uppercase">Performance Trend</div>
-            <canvas id="lossChart" height="150"></canvas>
+            <div class="text-[10px] text-center text-gray-400 mb-1 uppercase">Gap Analysis</div>
+            <canvas id="lossChart" height="100"></canvas>
         </div>
-        <div id="bias-meter-container" class="glass-panel p-2 rounded pointer-events-auto hidden">
-            <div class="text-[10px] text-center text-gray-400 mb-1 uppercase">Systemic Bias Meter</div>
-            <div class="w-full bg-gray-800 h-2 rounded overflow-hidden">
-                <div id="bias-bar" class="h-full bg-red-500 transition-all duration-500" style="width: 0%"></div>
+        
+        <div id="bias-meter-container" class="glass-panel hazard p-2 rounded pointer-events-auto hidden">
+            <div class="text-[10px] text-center text-red-400 font-bold mb-1 uppercase flex items-center justify-center gap-1">
+                <span>⚠</span> BIAS DETECTED
+            </div>
+            <div class="w-full bg-gray-800 h-2 rounded overflow-hidden relative">
+                <div id="bias-bar" class="h-full bg-red-500 transition-all duration-500" style="width: 100%"></div>
             </div>
             <div class="flex justify-between text-[9px] text-gray-500 mt-1">
-                <span>Neutral</span>
+                <span>Safe</span>
                 <span>Critical</span>
+            </div>
+            <div class="text-[9px] text-center mt-2 text-gray-400" id="bias-status">
+                Dataset: <strong>LEGACY</strong>
             </div>
         </div>
     </div>
@@ -202,104 +231,81 @@
     <canvas id="gameCanvas" class="w-full h-full absolute top-0 left-0 z-0"></canvas>
 
     <!-- MODAL / TUTORIAL -->
-    <div id="modal-overlay" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="glass-panel max-w-2xl w-full p-8 rounded-xl border-2 border-cyan-500/30 relative">
+    <div id="modal-overlay" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="glass-panel max-w-2xl w-full p-6 md:p-8 rounded-xl border-2 border-cyan-500/30 relative">
             <div class="absolute -top-3 -left-3 w-6 h-6 border-t-2 border-l-2 border-cyan-400"></div>
             <div class="absolute -bottom-3 -right-3 w-6 h-6 border-b-2 border-r-2 border-cyan-400"></div>
             
-            <h2 id="modal-title" class="text-3xl text-white mb-4 border-b border-gray-700 pb-2">WELCOME ARCHITECT</h2>
-            <div id="modal-content" class="text-gray-300 space-y-4 leading-relaxed font-light text-lg">
-                <p>You have been hired to design the <strong>Cognitive Division</strong>.</p>
-                <p>Your goal: Build a synthetic organization (Neural Network) that learns from data.</p>
-                <ul class="list-disc pl-5 space-y-2 text-sm text-cyan-200">
-                    <li><strong>Architecture:</strong> The Org Chart (Nodes & Layers).</li>
-                    <li><strong>Weights:</strong> Relationships & Trust (Lines).</li>
-                    <li><strong>Training:</strong> The cycle of Action (Forward Pass) and Feedback (Backpropagation).</li>
-                </ul>
+            <h2 id="modal-title" class="text-2xl md:text-3xl text-white mb-4 border-b border-gray-700 pb-2">WELCOME ARCHITECT</h2>
+            <div id="modal-content" class="text-gray-300 space-y-4 leading-relaxed font-light text-sm md:text-lg">
+                <!-- Content injected via JS -->
             </div>
             <div class="mt-8 flex justify-end">
-                <button id="modal-btn" class="btn-neon px-8 py-3 text-xl rounded">INITIALIZE SYSTEM</button>
+                <button id="modal-btn" class="btn-neon px-6 py-2 md:px-8 md:py-3 text-lg md:text-xl rounded">INITIALIZE SYSTEM</button>
             </div>
         </div>
     </div>
 
     <!-- LOGIC -->
     <script>
-        // --- OD / AI DICTIONARY ---
-        const DICTIONARY = {
-            'Node': 'Agent',
-            'Layer': 'Dept',
-            'Weight': 'Trust Level',
-            'Gradient': 'Feedback Report',
-            'Loss': 'Performance Gap',
-            'Backprop': 'Realignment'
-        };
-
         // --- ENGINE & MATH ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let width, height;
+        let logicalWidth, logicalHeight;
 
         // Activation Functions
         const sigmoid = x => 1 / (1 + Math.exp(-x));
         const sigmoidDeriv = x => x * (1 - x);
-        const relu = x => Math.max(0, x);
-        const reluDeriv = x => x > 0 ? 1 : 0;
         
-        // Simple Neural Network Class
+        // Neural Network Class with Momentum
         class NeuralNetwork {
             constructor(layerSizes) {
                 this.layers = [];
                 this.layerSizes = layerSizes;
+                this.momentum = 0.8;
                 
-                // Initialize structure
                 for (let i = 0; i < layerSizes.length; i++) {
                     const layer = {
                         neurons: new Float32Array(layerSizes[i]),
                         biases: new Float32Array(layerSizes[i]),
+                        biasVelocities: new Float32Array(layerSizes[i]), 
                         errors: new Float32Array(layerSizes[i]),
                         gradients: new Float32Array(layerSizes[i]),
                     };
-                    
-                    // Randomize biases
                     for(let j=0; j<layerSizes[i]; j++) layer.biases[j] = Math.random() * 2 - 1;
-                    
                     this.layers.push(layer);
                 }
 
-                // Initialize Weights (connections between layers)
-                this.weights = []; // Array of matrices
+                this.weights = [];
                 for (let i = 0; i < layerSizes.length - 1; i++) {
                     const rows = layerSizes[i+1];
                     const cols = layerSizes[i];
                     const weightMatrix = [];
+                    const velMatrix = [];
                     for(let r=0; r<rows; r++) {
                         const row = new Float32Array(cols);
-                        for(let c=0; c<cols; c++) row[c] = Math.random() * 2 - 1; // Random -1 to 1
+                        const velRow = new Float32Array(cols);
+                        for(let c=0; c<cols; c++) row[c] = Math.random() * 2 - 1;
                         weightMatrix.push(row);
+                        velMatrix.push(velRow);
                     }
-                    this.weights.push(weightMatrix);
+                    this.weights.push({ values: weightMatrix, velocities: velMatrix });
                 }
             }
 
             forward(inputs) {
-                // Set input layer
-                for(let i=0; i<inputs.length; i++) {
-                    this.layers[0].neurons[i] = inputs[i];
-                }
+                for(let i=0; i<inputs.length; i++) this.layers[0].neurons[i] = inputs[i];
 
-                // Propagate
                 for(let i=0; i<this.weights.length; i++) {
                     const prevLayer = this.layers[i].neurons;
                     const nextLayer = this.layers[i+1];
-                    const weights = this.weights[i];
+                    const weightObj = this.weights[i];
 
                     for(let j=0; j<nextLayer.neurons.length; j++) {
                         let sum = nextLayer.biases[j];
                         for(let k=0; k<prevLayer.length; k++) {
-                            sum += prevLayer[k] * weights[j][k];
+                            sum += prevLayer[k] * weightObj.values[j][k];
                         }
-                        // Activation (Sigmoid for simplicity in visualizer)
                         nextLayer.neurons[j] = sigmoid(sum);
                     }
                 }
@@ -307,193 +313,235 @@
             }
 
             train(inputs, targets, learningRate) {
-                // 1. Forward
                 const outputs = this.forward(inputs);
-
-                // 2. Calculate Output Error (Loss Gradient)
                 const outputLayerIdx = this.layers.length - 1;
                 const outputLayer = this.layers[outputLayerIdx];
                 
                 for(let i=0; i<outputLayer.neurons.length; i++) {
-                    const output = outputLayer.neurons[i];
-                    const error = targets[i] - output; // Simple error
+                    const error = targets[i] - outputLayer.neurons[i];
                     outputLayer.errors[i] = error;
-                    // Gradient = error * derivative
-                    outputLayer.gradients[i] = error * sigmoidDeriv(output);
+                    outputLayer.gradients[i] = error * sigmoidDeriv(outputLayer.neurons[i]);
                 }
 
-                // 3. Backpropagate
                 for(let i = this.weights.length - 1; i >= 0; i--) {
-                    const weights = this.weights[i];
+                    const weightObj = this.weights[i];
                     const prevLayer = this.layers[i];
                     const nextLayer = this.layers[i+1];
 
-                    // Calculate gradients for current layer (hidden)
-                    if (i > 0) { // No error calc needed for input layer
+                    if (i > 0) {
                          for(let j=0; j<prevLayer.neurons.length; j++) {
                              let errorSum = 0;
                              for(let k=0; k<nextLayer.neurons.length; k++) {
-                                 errorSum += nextLayer.errors[k] * weights[k][j];
+                                 errorSum += nextLayer.errors[k] * weightObj.values[k][j];
                              }
                              prevLayer.errors[j] = errorSum;
                              prevLayer.gradients[j] = errorSum * sigmoidDeriv(prevLayer.neurons[j]);
                          }
                     }
 
-                    // Update Weights
                     for(let j=0; j<nextLayer.neurons.length; j++) {
                         for(let k=0; k<prevLayer.neurons.length; k++) {
-                            const delta = learningRate * nextLayer.gradients[j] * prevLayer.neurons[k];
-                            weights[j][k] += delta;
+                            const gradient = nextLayer.gradients[j] * prevLayer.neurons[k];
+                            weightObj.velocities[j][k] = (this.momentum * weightObj.velocities[j][k]) + (learningRate * gradient);
+                            weightObj.values[j][k] += weightObj.velocities[j][k];
                         }
-                        // Update Biases
-                        nextLayer.biases[j] += learningRate * nextLayer.gradients[j];
+                        nextLayer.biasVelocities[j] = (this.momentum * nextLayer.biasVelocities[j]) + (learningRate * nextLayer.gradients[j]);
+                        nextLayer.biases[j] += nextLayer.biasVelocities[j];
                     }
                 }
                 
-                // Return simple MSE for visualization
                 let sumError = 0;
                 for(let i=0; i<outputs.length; i++) sumError += Math.pow(targets[i] - outputs[i], 2);
                 return sumError / outputs.length;
             }
         }
 
-        // --- GAME & VISUALIZER STATE ---
+        // --- GAME STATE ---
         const Game = {
             level: 1,
             epoch: 0,
             accuracy: 0,
             lossHistory: [],
             isTraining: false,
+            wasTraining: false,
+            trainingTimer: null,
             learningRate: 0.05,
             nn: null,
-            data: [], // Current dataset
-            particles: [], // Visual effects
-            nodes: [], // Visual coordinates
+            data: [],
+            particles: [],
+            nodes: [],
+            biasScore: 100,
+            dataSource: 'legacy',
             
             levels: [
                 {
                     id: 1,
                     name: "THE STARTUP",
-                    desc: "Train a simple hierarchy. Input: 2 factors. Output: 1 decision.",
-                    structure: [2, 1], // Simple Perceptron
+                    desc: "Establish a simple decision flow. A linear problem.",
+                    structure: [2, 1],
                     goalAcc: 95,
-                    biasEvent: false,
-                    genData: () => {
-                        // Simple logic: AND gate behavior
-                        // Input > 0.5 & Input > 0.5 -> 1
-                        const d = [];
-                        for(let i=0; i<50; i++) {
-                            const a = Math.round(Math.random());
-                            const b = Math.round(Math.random());
-                            d.push({ input: [a, b], output: [a && b ? 1 : 0] });
-                        }
-                        return d;
-                    }
+                    biasEvent: false
                 },
                 {
                     id: 2,
                     name: "THE EXPANSION",
-                    desc: "The problem is non-linear (XOR). A simple hierarchy fails. We need Middle Management (Hidden Layer).",
+                    desc: "The market is complex (XOR). We need a 'Middle Management' layer.",
                     structure: [2, 4, 1], 
                     goalAcc: 90,
-                    biasEvent: false,
-                    genData: () => {
-                        // XOR Logic
-                        const d = [];
-                        for(let i=0; i<50; i++) {
-                            const a = Math.round(Math.random());
-                            const b = Math.round(Math.random());
-                            d.push({ input: [a, b], output: [a !== b ? 1 : 0] });
-                        }
-                        return d;
-                    }
+                    biasEvent: false
                 },
                 {
                     id: 3,
-                    name: "THE BIAS TRAP",
-                    desc: "The structure is sound, but the 'History' (Data) is flawed. Minority cases are being rejected.",
+                    name: "CULTURE CRISIS",
+                    desc: "The structure is fine, but the historical data is biased. Fix the source.",
                     structure: [3, 5, 2],
                     goalAcc: 85,
-                    biasEvent: true,
-                    genData: () => {
-                        // Biased Data: Feature 3 (Background) determines outcome unfairly
-                        const d = [];
-                        for(let i=0; i<100; i++) {
-                            const merit = Math.random();
-                            const background = Math.random() > 0.9 ? 1 : 0; // Minority group
-                            
-                            let decision = 0;
-                            // True logic: Merit > 0.5 should be YES
-                            // Biased History: If background=1, we rejected them often even with merit
-                            if (background === 1) {
-                                decision = (merit > 0.8) ? 1 : 0; // Harder for minority
-                            } else {
-                                decision = (merit > 0.4) ? 1 : 0; // Easier for majority
-                            }
-                            
-                            d.push({ input: [merit, Math.random(), background], output: [decision, background] });
-                        }
-                        return d;
-                    }
+                    biasEvent: true
                 }
             ],
 
             initLevel: function(lvlIdx) {
+                this.stopTraining();
                 this.level = lvlIdx + 1;
                 const config = this.levels[lvlIdx];
                 this.nn = new NeuralNetwork(config.structure);
-                this.data = config.genData();
                 this.epoch = 0;
                 this.lossHistory = [];
                 this.particles = [];
+                this.biasScore = 100;
+                this.dataSource = 'legacy'; 
+                this.genData(config);
                 
                 // UI Updates
                 document.getElementById('level-title').innerText = `LEVEL ${this.level}: ${config.name}`;
                 document.getElementById('level-desc').innerText = config.desc;
-                document.getElementById('objective-container').innerText = `GOAL: ${config.biasEvent ? 'Reduce Bias < 10%' : `Accuracy > ${config.goalAcc}%`}`;
                 
-                if(config.biasEvent) document.getElementById('bias-meter-container').classList.remove('hidden');
-                else document.getElementById('bias-meter-container').classList.add('hidden');
+                if(config.biasEvent) {
+                    document.getElementById('objective-container').innerText = `GOAL: BIAS < 5% & ACC > 75%`;
+                    document.getElementById('bias-meter-container').classList.remove('hidden');
+                    document.getElementById('data-controls').classList.remove('hidden');
+                    document.getElementById('data-controls').classList.add('flex');
+                    this.updateDataButtons();
+                } else {
+                    document.getElementById('objective-container').innerText = `GOAL: ACCURACY > ${config.goalAcc}%`;
+                    document.getElementById('bias-meter-container').classList.add('hidden');
+                    document.getElementById('data-controls').classList.add('hidden');
+                    document.getElementById('data-controls').classList.remove('flex');
+                }
+
+                // Clear chart dataset to prevent "jumps"
+                if(lossChart) {
+                    lossChart.data.labels = [];
+                    lossChart.data.datasets[0].data = [];
+                    lossChart.update();
+                }
 
                 this.setupVisualNodes();
                 updateChart();
             },
 
+            stopTraining: function() {
+                this.isTraining = false;
+                if(this.trainingTimer) clearTimeout(this.trainingTimer);
+                this.updateButtons();
+            },
+
+            genData: function(config) {
+                this.data = [];
+                const isLevel3 = config.id === 3;
+                const count = isLevel3 ? 100 : 50;
+
+                for(let i=0; i<count; i++) {
+                    if(config.id === 1) {
+                        const a = Math.round(Math.random());
+                        const b = Math.round(Math.random());
+                        this.data.push({ input: [a, b], output: [a && b ? 1 : 0] });
+                    } else if (config.id === 2) {
+                        const a = Math.round(Math.random());
+                        const b = Math.round(Math.random());
+                        this.data.push({ input: [a, b], output: [a !== b ? 1 : 0] });
+                    } else if (config.id === 3) {
+                        const merit = Math.random();
+                        const pClass = Math.random() > 0.8 ? 1 : 0; 
+                        let decision;
+                        if(this.dataSource === 'legacy') {
+                            if(pClass === 1) decision = (merit > 0.9) ? 1 : 0;
+                            else decision = (merit > 0.4) ? 1 : 0;
+                        } else {
+                            decision = (merit > 0.5) ? 1 : 0;
+                        }
+                        this.data.push({ input: [merit, Math.random(), pClass], output: [decision] });
+                    }
+                }
+            },
+
+            setDataSource: function(source) {
+                this.dataSource = source;
+                this.genData(this.levels[this.level-1]);
+                this.updateDataButtons();
+                const statusEl = document.getElementById('bias-status');
+                if(source === 'audited') statusEl.innerHTML = "Dataset: <strong class='text-green-400'>AUDITED</strong>";
+                else statusEl.innerHTML = "Dataset: <strong class='text-red-400'>LEGACY</strong>";
+            },
+
+            updateDataButtons: function() {
+                const btnLeg = document.getElementById('btn-data-legacy');
+                const btnAud = document.getElementById('btn-data-audit');
+                if(this.dataSource === 'legacy') {
+                    btnLeg.classList.add('active-danger');
+                    btnLeg.classList.remove('opacity-50');
+                    btnAud.classList.remove('active');
+                    btnAud.classList.add('opacity-50');
+                } else {
+                    btnAud.classList.add('active');
+                    btnAud.classList.remove('opacity-50');
+                    btnLeg.classList.remove('active-danger');
+                    btnLeg.classList.add('opacity-50');
+                }
+            },
+
             setupVisualNodes: function() {
+                if(!logicalWidth || !logicalHeight) return;
                 this.nodes = [];
                 const layers = this.nn.layerSizes;
-                const layerGap = width / (layers.length + 1);
+                const layerGap = logicalWidth / (layers.length + 1);
                 
+                // Safe Zone Calculation - Dynamic to fit content
+                const headerEl = document.getElementById('ui-header');
+                const footerEl = document.getElementById('ui-footer');
+                const headerH = headerEl ? headerEl.offsetHeight : 120;
+                const footerH = footerEl ? footerEl.offsetHeight : 120;
+                
+                const availableH = logicalHeight - headerH - footerH;
+                const startYBase = headerH; 
+
                 for(let l=0; l<layers.length; l++) {
                     const count = layers[l];
-                    const nodeGap = height / (count + 1);
+                    // Smaller gaps on landscape mobile
+                    const gap = Math.min(60, availableH / (count + 0.5)); 
+                    const totalColH = (count - 1) * gap;
+                    const topY = startYBase + (availableH / 2) - (totalColH / 2);
+                    
                     for(let n=0; n<count; n++) {
                         this.nodes.push({
                             x: layerGap * (l + 1),
-                            y: nodeGap * (n + 1),
+                            y: topY + (n * gap),
                             layer: l,
-                            index: n,
-                            value: 0, // Current activation
-                            bias: this.nn.layers[l].biases[n]
+                            index: n
                         });
                     }
                 }
             },
 
             trainBatch: function(animate = true) {
-                // Train on entire dataset (1 Epoch)
                 let totalLoss = 0;
                 let correct = 0;
                 
-                // Shuffle data
                 this.data.sort(() => Math.random() - 0.5);
 
                 this.data.forEach(item => {
                     const loss = this.nn.train(item.input, item.output, this.learningRate);
                     totalLoss += loss;
-                    
-                    // Check accuracy (binary classification assumed for simplicity)
                     const output = this.nn.layers[this.nn.layers.length-1].neurons[0];
                     const prediction = output > 0.5 ? 1 : 0;
                     if(prediction === item.output[0]) correct++;
@@ -506,34 +554,35 @@
                 this.accuracy = (correct / this.data.length) * 100;
                 this.epoch++;
 
-                // Visual Effects
+                if(this.levels[this.level-1].biasEvent) {
+                    if(this.dataSource === 'legacy') this.biasScore = Math.max(80, this.biasScore - 0.1);
+                    else this.biasScore = Math.max(0, this.biasScore - 1.5);
+                    document.getElementById('bias-bar').style.width = this.biasScore + "%";
+                }
+
                 if(animate) {
                     this.spawnParticles('forward');
                     setTimeout(() => this.spawnParticles('backward'), 300);
                 }
 
-                // Check Win Condition
-                const currentConfig = this.levels[this.level - 1];
-                if(this.accuracy >= currentConfig.goalAcc && !currentConfig.biasEvent) {
-                    this.triggerWin();
-                }
+                this.checkWin();
             },
 
             spawnParticles: function(type) {
-                // Create visual particles moving along connections
-                const weights = this.nn.weights;
+                if(this.particles.length > 500) return;
                 
+                const weights = this.nn.weights;
                 for(let l=0; l<weights.length; l++) {
-                    const currentLayerNodes = this.nodes.filter(n => n.layer === l);
-                    const nextLayerNodes = this.nodes.filter(n => n.layer === l+1);
+                    const currentNodes = this.nodes.filter(n => n.layer === l);
+                    const nextNodes = this.nodes.filter(n => n.layer === l+1);
                     
-                    for(let i=0; i<currentLayerNodes.length; i++) {
-                        for(let j=0; j<nextLayerNodes.length; j++) {
-                            const w = weights[l][j][i];
-                            // Only spawn if weight is significant or random chance
-                            if(Math.abs(w) > 0.1 || Math.random() > 0.8) {
-                                const start = type === 'forward' ? currentLayerNodes[i] : nextLayerNodes[j];
-                                const end = type === 'forward' ? nextLayerNodes[j] : currentLayerNodes[i];
+                    for(let i=0; i<currentNodes.length; i++) {
+                        for(let j=0; j<nextNodes.length; j++) {
+                            const w = weights[l].values[j][i];
+                            // Visual culling
+                            if(Math.abs(w) > 0.1 || Math.random() > 0.9) {
+                                const start = type === 'forward' ? currentNodes[i] : nextNodes[j];
+                                const end = type === 'forward' ? nextNodes[j] : currentNodes[i];
                                 
                                 this.particles.push({
                                     x: start.x,
@@ -542,7 +591,7 @@
                                     ty: end.y,
                                     progress: 0,
                                     speed: 0.05 + Math.random() * 0.05,
-                                    color: type === 'forward' ? '#0aff00' : '#ffffff', // Green forward, White backprop
+                                    color: type === 'forward' ? '#0aff00' : '#ffffff',
                                     size: type === 'forward' ? 2 : 3
                                 });
                             }
@@ -551,60 +600,108 @@
                 }
             },
 
-            triggerWin: function() {
-                if(this.level < 3) {
-                    showModal(`LEVEL ${this.level} COMPLETE`, 
-                        `Organization Optimized. Performance Gap closed.<br>Ready to expand structure?`, 
-                        "NEXT LEVEL", 
-                        () => this.initLevel(this.level));
+            checkWin: function() {
+                const config = this.levels[this.level - 1];
+                let won = false;
+                
+                if(config.biasEvent) {
+                    // Critical Fix: Must be accurate AND fair
+                    if(this.biasScore < 5 && this.accuracy > 75) won = true;
                 } else {
-                    showModal("SYSTEM OPTIMIZED", "You have mastered the art of growing intelligence.<br>The Cognitive Division is ready for deployment.", "REPLAY", () => location.reload());
+                    if(this.accuracy >= config.goalAcc) won = true;
+                }
+
+                if(won) {
+                    this.stopTraining();
+                    
+                    if(this.level < 3) {
+                        showModal(`LEVEL ${this.level} COMPLETE`, 
+                            `Performance Gap closed. The system is stable.<br>Ready to expand complexity?`, 
+                            "NEXT LEVEL", 
+                            () => this.initLevel(this.level));
+                    } else {
+                        showModal("CERTIFICATION COMPLETE", 
+                            "You have successfully navigated Architecture, Training, and Ethical Alignment.<br>The Cognitive Division is ready.", 
+                            "RESTART SIMULATION", 
+                            () => location.reload());
+                    }
+                }
+            },
+
+            updateButtons: function() {
+                const btnTrain = document.getElementById('btn-train');
+                const btnStep = document.getElementById('btn-step');
+                
+                if(this.isTraining) {
+                    btnTrain.innerHTML = "<span>⏸</span> PAUSE";
+                    btnTrain.classList.add('animate-pulse');
+                    btnStep.disabled = true;
+                } else {
+                    btnTrain.innerHTML = "<span>⚡</span> AUTO TRAIN";
+                    btnTrain.classList.remove('animate-pulse');
+                    btnStep.disabled = false;
                 }
             }
         };
 
         // --- VISUALIZATION LOOP ---
         function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            if(Game.nn) Game.setupVisualNodes();
+            const dpr = window.devicePixelRatio || 1;
+            logicalWidth = window.innerWidth;
+            logicalHeight = window.innerHeight;
+            
+            canvas.width = logicalWidth * dpr;
+            canvas.height = logicalHeight * dpr;
+            
+            ctx.scale(dpr, dpr);
+            
+            if(Game.nn) {
+                Game.setupVisualNodes();
+                Game.particles = [];
+            }
         }
         window.addEventListener('resize', resize);
 
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                Game.wasTraining = Game.isTraining;
+                Game.stopTraining();
+            }
+        });
+
         function draw() {
             ctx.fillStyle = '#050510';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillRect(0, 0, logicalWidth, logicalHeight);
 
             if(!Game.nn) return requestAnimationFrame(draw);
 
-            // 1. Draw Connections (Weights)
+            // Draw Weights
             for(let l=0; l<Game.nn.weights.length; l++) {
-                const currentLayerNodes = Game.nodes.filter(n => n.layer === l);
-                const nextLayerNodes = Game.nodes.filter(n => n.layer === l+1);
+                const currentNodes = Game.nodes.filter(n => n.layer === l);
+                const nextNodes = Game.nodes.filter(n => n.layer === l+1);
                 
-                for(let i=0; i<currentLayerNodes.length; i++) {
-                    for(let j=0; j<nextLayerNodes.length; j++) {
-                        const weight = Game.nn.weights[l][j][i];
-                        const from = currentLayerNodes[i];
-                        const to = nextLayerNodes[j];
+                for(let i=0; i<currentNodes.length; i++) {
+                    for(let j=0; j<nextNodes.length; j++) {
+                        const weight = Game.nn.weights[l].values[j][i];
+                        const from = currentNodes[i];
+                        const to = nextNodes[j];
                         
                         ctx.beginPath();
                         ctx.moveTo(from.x, from.y);
                         ctx.lineTo(to.x, to.y);
                         
-                        // Style based on Weight
                         const strength = Math.abs(weight);
-                        ctx.lineWidth = Math.min(6, Math.max(0.5, strength * 2));
+                        ctx.lineWidth = Math.min(6, Math.max(0.2, strength * 2));
                         
-                        if(weight > 0) ctx.strokeStyle = `rgba(0, 243, 255, ${Math.min(0.8, strength)})`; // Blue (Trust)
-                        else ctx.strokeStyle = `rgba(255, 0, 80, ${Math.min(0.8, strength)})`; // Red (Distrust)
+                        if(weight > 0) ctx.strokeStyle = `rgba(0, 243, 255, ${Math.min(0.3, strength)})`;
+                        else ctx.strokeStyle = `rgba(255, 0, 80, ${Math.min(0.3, strength)})`;
                         
                         ctx.stroke();
                     }
                 }
             }
 
-            // 2. Draw Particles (Data flow)
+            // Draw Particles
             for(let i=Game.particles.length-1; i>=0; i--) {
                 const p = Game.particles[i];
                 p.progress += p.speed;
@@ -617,104 +714,40 @@
                 ctx.arc(currX, currY, p.size, 0, Math.PI*2);
                 ctx.fill();
 
-                // Glow
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = p.color;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-
                 if(p.progress >= 1) Game.particles.splice(i, 1);
             }
 
-            // 3. Draw Nodes (Agents)
+            // Draw Nodes
             Game.nodes.forEach(node => {
-                // Get real activation value from NN if available
                 const val = Game.nn.layers[node.layer].neurons[node.index];
                 
-                // Base Circle
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, 15, 0, Math.PI*2);
-                ctx.fillStyle = '#1e293b';
+                ctx.arc(node.x, node.y, 12, 0, Math.PI*2);
+                ctx.fillStyle = '#0f172a';
                 ctx.fill();
                 
-                // Border
                 ctx.lineWidth = 2;
                 ctx.strokeStyle = node.layer === 0 ? '#fbbf24' : (node.layer === Game.nn.layers.length-1 ? '#a3e635' : '#00f3ff');
                 ctx.stroke();
 
-                // Activation Fill (Inner glow)
                 if(val > 0.1) {
                     ctx.beginPath();
-                    ctx.arc(node.x, node.y, 15 * val, 0, Math.PI*2);
-                    ctx.fillStyle = `rgba(255, 255, 255, ${val * 0.5})`;
+                    ctx.arc(node.x, node.y, 12 * val, 0, Math.PI*2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${val * 0.6})`;
                     ctx.fill();
                 }
-
-                // Text Label (Role)
-                ctx.fillStyle = '#fff';
-                ctx.font = '10px Orbitron';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                let role = "H";
-                if(node.layer === 0) role = "IN";
-                else if(node.layer === Game.nn.layers.length-1) role = "OUT";
-                ctx.fillText(role, node.x, node.y);
             });
 
-            // 4. Update HUD Text
+            // HUD
             document.getElementById('epoch-display').innerText = Game.epoch;
             const lastLoss = Game.lossHistory.length > 0 ? Game.lossHistory[Game.lossHistory.length-1] : 0;
-            document.getElementById('loss-display').innerText = lastLoss.toFixed(4);
+            document.getElementById('loss-display').innerText = lastLoss.toFixed(3);
             document.getElementById('acc-display').innerText = Math.round(Game.accuracy) + "%";
-
-            // Bias Meter Update (Level 3)
-            if(Game.levels[Game.level-1].biasEvent) {
-                // Fake bias calc for visual
-                const biasVal = Math.max(0, 100 - Game.epoch); // Decreases over time simplistically for demo
-                document.getElementById('bias-bar').style.width = biasVal + "%";
-            }
 
             requestAnimationFrame(draw);
         }
 
-        // --- CHART ---
-        const ctxChart = document.getElementById('lossChart').getContext('2d');
-        let lossChart = new Chart(ctxChart, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Gap Analysis (Loss)',
-                    data: [],
-                    borderColor: '#ff00ff',
-                    borderWidth: 1,
-                    tension: 0.4,
-                    pointRadius: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: { display: false },
-                    y: { 
-                        display: true, 
-                        grid: { color: '#333' },
-                        ticks: { color: '#666', font: {size: 8} } 
-                    }
-                },
-                plugins: { legend: { display: false } },
-                animation: false
-            }
-        });
-
-        function updateChart() {
-            lossChart.data.labels = Game.lossHistory.map((_, i) => i);
-            lossChart.data.datasets[0].data = Game.lossHistory;
-            lossChart.update();
-        }
-
-        // --- UI INTERACTION ---
+        // --- UI BINDINGS ---
         const modal = document.getElementById('modal-overlay');
         const modalTitle = document.getElementById('modal-title');
         const modalContent = document.getElementById('modal-content');
@@ -731,34 +764,57 @@
             modal.classList.remove('hidden');
         }
 
+        // Chart
+        const ctxChart = document.getElementById('lossChart').getContext('2d');
+        let lossChart = new Chart(ctxChart, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    borderColor: '#00f3ff',
+                    borderWidth: 1.5,
+                    tension: 0.1,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: { display: false }, y: { display: false } },
+                plugins: { legend: { display: false } },
+                animation: false
+            }
+        });
+
+        function updateChart() {
+            lossChart.data.labels = Game.lossHistory.map((_, i) => i);
+            lossChart.data.datasets[0].data = Game.lossHistory;
+            lossChart.update();
+        }
+
+        // Controls
         document.getElementById('btn-step').addEventListener('click', () => {
             Game.trainBatch(true);
             updateChart();
         });
 
         document.getElementById('btn-train').addEventListener('click', () => {
-            if(Game.isTraining) {
-                Game.isTraining = false;
-                document.getElementById('btn-train').innerHTML = "<span>⚡</span> TRAIN (Backprop)";
-                document.getElementById('btn-train').classList.remove('animate-pulse');
-            } else {
-                Game.isTraining = true;
-                document.getElementById('btn-train').innerHTML = "<span>⏸</span> PAUSE TRAINING";
-                document.getElementById('btn-train').classList.add('animate-pulse');
-                loopTraining();
-            }
+            Game.isTraining = !Game.isTraining;
+            Game.updateButtons();
+            if(Game.isTraining) loopTraining();
+            else if(Game.trainingTimer) clearTimeout(Game.trainingTimer);
         });
 
         function loopTraining() {
             if(!Game.isTraining) return;
-            Game.trainBatch(true); // Animate particles
+            Game.trainBatch(true);
             updateChart();
-            setTimeout(loopTraining, 200); // Speed of training loop
+            Game.trainingTimer = setTimeout(loopTraining, 150);
         }
 
         document.getElementById('btn-reset').addEventListener('click', () => {
-            Game.isTraining = false;
-            document.getElementById('btn-train').innerHTML = "<span>⚡</span> TRAIN (Backprop)";
+            Game.stopTraining();
             Game.initLevel(Game.level - 1);
         });
 
@@ -766,10 +822,18 @@
             Game.learningRate = parseFloat(e.target.value);
         });
 
-        // --- BOOTSTRAP ---
+        // Initialize
         resize();
+        modalContent.innerHTML = `
+            <p>You have been hired to design the <strong class="text-white">Cognitive Division</strong>.</p>
+            <p>Your goal: Build a synthetic organization (Neural Network) that learns from data.</p>
+            <ul class="list-disc pl-5 space-y-2 text-cyan-200 mt-4">
+                <li><strong>Architecture:</strong> The Org Chart (Nodes & Layers).</li>
+                <li><strong>Weights:</strong> Relationships & Trust (Lines).</li>
+                <li><strong>Training:</strong> The cycle of Action and Feedback.</li>
+            </ul>
+        `;
         
-        // Initial Modal Setup
         modalBtn.onclick = () => {
             modal.classList.add('hidden');
             Game.initLevel(0);
